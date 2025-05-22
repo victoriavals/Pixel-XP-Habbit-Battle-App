@@ -5,13 +5,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import PwaHandler from '@/components/PwaHandler';
 
-const geistSans = GeistSans({
-  variable: '--font-geist-sans',
-});
-
-const geistMono = GeistMono({
-  variable: '--font-geist-mono',
-});
+// geistSans and geistMono are objects, not functions to be called.
+// Their 'variable' property can be accessed directly.
 
 export const metadata: Metadata = {
   title: 'Pixel XP Habit Battle',
@@ -27,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <PwaHandler />
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}>
         {children}
         <Toaster />
       </body>
