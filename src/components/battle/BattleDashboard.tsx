@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useBattleState } from '@/hooks/useBattleState';
@@ -13,6 +14,7 @@ const BattleDashboard: React.FC = () => {
     rivalXp,
     addQuest,
     toggleQuestComplete,
+    deleteQuest, // Added deleteQuest
     isLoadingAi,
     MAX_XP,
   } = useBattleState();
@@ -35,7 +37,11 @@ const BattleDashboard: React.FC = () => {
 
       <XpDisplay userXp={userXp} rivalXp={rivalXp} max_xp={MAX_XP} />
       <QuestInput onAddQuest={addQuest} />
-      <QuestList quests={quests} onToggleComplete={toggleQuestComplete} />
+      <QuestList 
+        quests={quests} 
+        onToggleComplete={toggleQuestComplete} 
+        onDeleteQuest={deleteQuest} // Pass deleteQuest to QuestList
+      />
       
       <footer className="text-center mt-12 text-sm text-muted-foreground/70">
         <p>&copy; {new Date().getFullYear()} Pixel XP Habit Battle. Stay vigilant!</p>

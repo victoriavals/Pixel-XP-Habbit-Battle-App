@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Quest } from '@/types';
@@ -8,9 +9,10 @@ import { ListChecks } from 'lucide-react';
 interface QuestListProps {
   quests: Quest[];
   onToggleComplete: (id: string) => void;
+  onDeleteQuest: (id: string) => void;
 }
 
-const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete }) => {
+const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete, onDeleteQuest }) => {
   if (quests.length === 0) {
     return (
       <Card className="text-center py-10 bg-card/70 backdrop-blur-sm shadow-md">
@@ -32,7 +34,12 @@ const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete }) => {
       <CardContent>
         <ul className="space-y-2">
           {quests.map(quest => (
-            <QuestItem key={quest.id} quest={quest} onToggleComplete={onToggleComplete} />
+            <QuestItem 
+              key={quest.id} 
+              quest={quest} 
+              onToggleComplete={onToggleComplete}
+              onDeleteQuest={onDeleteQuest} 
+            />
           ))}
         </ul>
       </CardContent>
