@@ -4,15 +4,16 @@
 import type { Quest } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Sparkles, Trash2, Pencil } from 'lucide-react'; // Added Pencil
 
 interface QuestItemProps {
   quest: Quest;
   onToggleComplete: (id: string) => void;
   onDeleteQuest: (id: string) => void;
+  onStartEditQuest: (id: string) => void; // New prop for starting edit
 }
 
-const QuestItem: React.FC<QuestItemProps> = ({ quest, onToggleComplete, onDeleteQuest }) => {
+const QuestItem: React.FC<QuestItemProps> = ({ quest, onToggleComplete, onDeleteQuest, onStartEditQuest }) => {
   return (
     <li className={`flex items-center justify-between p-4 rounded-lg mb-3 transition-all duration-300 ease-in-out
                      ${quest.isComplete ? 'bg-green-500/20 border-l-4 border-green-400' : 'bg-slate-700/30 border-l-4 border-slate-500'}
@@ -46,6 +47,15 @@ const QuestItem: React.FC<QuestItemProps> = ({ quest, onToggleComplete, onDelete
         ) : (
           <ShieldAlert className="h-7 w-7 text-yellow-400 animate-pulse" />
         )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onStartEditQuest(quest.id)} // Call onStartEditQuest
+          aria-label="Edit quest"
+          className="text-muted-foreground hover:text-primary"
+        >
+          <Pencil className="h-5 w-5" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"

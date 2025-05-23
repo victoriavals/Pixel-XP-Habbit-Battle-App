@@ -10,9 +10,10 @@ interface QuestListProps {
   quests: Quest[];
   onToggleComplete: (id: string) => void;
   onDeleteQuest: (id: string) => void;
+  onStartEditQuest: (id: string) => void; // New prop for starting edit
 }
 
-const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete, onDeleteQuest }) => {
+const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete, onDeleteQuest, onStartEditQuest }) => {
   if (quests.length === 0) {
     return (
       <Card className="text-center py-10 bg-card/70 backdrop-blur-sm shadow-md">
@@ -39,6 +40,7 @@ const QuestList: React.FC<QuestListProps> = ({ quests, onToggleComplete, onDelet
               quest={quest} 
               onToggleComplete={onToggleComplete}
               onDeleteQuest={onDeleteQuest} 
+              onStartEditQuest={onStartEditQuest} // Pass it down
             />
           ))}
         </ul>

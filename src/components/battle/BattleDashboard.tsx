@@ -5,6 +5,7 @@ import { useBattleState } from '@/hooks/useBattleState';
 import XpDisplay from './XpDisplay';
 import QuestInput from './QuestInput';
 import QuestList from './QuestList';
+import EditQuestDialog from './EditQuestDialog'; // Import the new dialog
 import { Loader2 } from 'lucide-react';
 
 const BattleDashboard: React.FC = () => {
@@ -14,9 +15,13 @@ const BattleDashboard: React.FC = () => {
     rivalXp,
     addQuest,
     toggleQuestComplete,
-    deleteQuest, // Added deleteQuest
+    deleteQuest,
     isLoadingAi,
     MAX_XP,
+    editingQuest,      // Get editingQuest state
+    startEditQuest,    // Get function to start editing
+    cancelEditQuest,   // Get function to cancel editing
+    updateQuest,       // Get function to update quest
   } = useBattleState();
 
   return (
@@ -40,8 +45,19 @@ const BattleDashboard: React.FC = () => {
       <QuestList 
         quests={quests} 
         onToggleComplete={toggleQuestComplete} 
-        onDeleteQuest={deleteQuest} // Pass deleteQuest to QuestList
+        onDeleteQuest={deleteQuest}
+        onStartEditQuest={startEditQuest} // Pass startEditQuest to QuestList
       />
+      
+      {editingQuest && (
+        <EditQuestDialog
+          quest={editingQuest}
+          onSave={updateQuest}
+          onCancel={cancelEditQuest}
+          isOpen={!!editingQuest}
+          onOpenChange={(open) => { if (!open) cancelEditQuest(); }}
+        />
+      )}
       
       <footer className="text-center mt-12 text-sm text-muted-foreground/70">
         <p>&copy; {new Date().getFullYear()} Pixel XP Habit Battle. Stay vigilant!</p>

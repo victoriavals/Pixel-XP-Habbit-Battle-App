@@ -14,6 +14,7 @@ export function useBattleState() {
   const [userXp, setUserXp] = useState(0);
   const [rivalXp, setRivalXp] = useState(0);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null); // For managing the quest being edited
   const { toast } = useToast();
 
   const addQuest = (title: string, xpValue: number, durationMinutes: number = 24 * 60) => {
@@ -81,6 +82,53 @@ export function useBattleState() {
     toast({ title: "Quest Deleted", description: `"${questToDelete.title}" has been removed.` });
   };
 
+  const startEditQuest = (id: string) => {
+    const questToEdit = quests.find(q => q.id === id);
+    if (questToEdit) {
+      setEditingQuest(questToEdit);
+    } else {
+      toast({ title: "Error", description: "Quest not found for editing.", variant: "destructive" });
+    }
+  };
+
+  const cancelEditQuest = () => {
+    setEditingQuest(null);
+  };
+
+  const updateQuest = (id: string, newTitle: string, newXpValue: number) => {
+    const questToUpdate = quests.find(q => q.id === id);
+    if (!questToUpdate) {
+      toast({ title: "Error", description: "Quest not found for update.", variant: "destructive" });
+      setEditingQuest(null);
+      return;
+    }
+
+    if (!newTitle.trim()) {
+      toast({ title: "Error", description: "Quest title cannot be empty.", variant: "destructive" });
+      return; // Don't close dialog, let user fix
+    }
+    if (newXpValue <= 0) {
+      toast({ title: "Error", description: "XP value must be positive.", variant: "destructive" });
+      return; // Don't close dialog, let user fix
+    }
+    
+    const oldXpValue = questToUpdate.xpValue;
+    const wasComplete = questToUpdate.isComplete;
+
+    setQuests(prevQuests =>
+      prevQuests.map(q =>
+        q.id === id ? { ...q, title: newTitle, xpValue: newXpValue } : q
+      )
+    );
+
+    if (wasComplete) {
+      setUserXp(prevXp => Math.max(0, Math.min(MAX_XP, prevXp - oldXpValue + newXpValue)));
+    }
+
+    toast({ title: "Quest Updated!", description: `"${newTitle}" has been modified.` });
+    setEditingQuest(null);
+  };
+
 
   const updateRivalXp = useCallback(async () => {
     const incompleteQuestsForAI: IncompleteQuestForAI[] = quests
@@ -97,8 +145,6 @@ export function useBattleState() {
       });
 
     if (incompleteQuestsForAI.length === 0) {
-      // No incomplete quests, Rival XP doesn't need to increase based on this logic for now.
-      // We could potentially have rival XP decay slowly or have a base gain.
       return;
     }
 
@@ -106,7 +152,6 @@ export function useBattleState() {
     try {
       const input: CalculateRivalXpInput = { incompleteQuests: incompleteQuestsForAI };
       const result = await calculateRivalXp(input);
-      // Ensure rival XP doesn't exceed MAX_XP and is not negative
       setRivalXp(prevRivalXp => Math.min(Math.max(0, prevRivalXp + Math.round(result.rivalXpGain)), MAX_XP));
     } catch (error) {
       console.error("Error calculating Rival XP:", error);
@@ -118,10 +163,9 @@ export function useBattleState() {
     } finally {
       setIsLoadingAi(false);
     }
-  }, [quests, toast]); // `toast` is stable, so primarily `quests` drives recalculation
+  }, [quests, toast]);
 
   useEffect(() => {
-    // Initial call and then set interval
     updateRivalXp(); 
     const intervalId = setInterval(updateRivalXp, RIVAL_XP_UPDATE_INTERVAL);
     return () => clearInterval(intervalId);
@@ -131,18 +175,12 @@ export function useBattleState() {
     try {
       const savedQuests = localStorage.getItem('pixelXpQuests');
       const savedUserXp = localStorage.getItem('pixelXpUserXp');
-      // It's good practice to also save/load rivalXp if you want it to be persistent across sessions
-      // const savedRivalXp = localStorage.getItem('pixelXpRivalXp'); 
-
       if (savedQuests) {
         setQuests(JSON.parse(savedQuests));
       }
       if (savedUserXp) {
         setUserXp(JSON.parse(savedUserXp));
       }
-      // if (savedRivalXp) {
-      //   setRivalXp(JSON.parse(savedRivalXp));
-      // }
     } catch (error) {
       console.error("Error loading from localStorage:", error);
       toast({
@@ -157,7 +195,6 @@ export function useBattleState() {
     try {
       localStorage.setItem('pixelXpQuests', JSON.stringify(quests));
       localStorage.setItem('pixelXpUserXp', JSON.stringify(userXp));
-      // localStorage.setItem('pixelXpRivalXp', JSON.stringify(rivalXp));
     } catch (error) {
         console.error("Error saving to localStorage:", error);
         toast({
@@ -178,5 +215,9 @@ export function useBattleState() {
     deleteQuest,
     isLoadingAi,
     MAX_XP,
+    editingQuest,
+    startEditQuest,
+    cancelEditQuest,
+    updateQuest,
   };
 }
