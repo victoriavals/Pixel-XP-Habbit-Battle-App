@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -37,6 +38,8 @@ export async function calculateRivalXp(input: CalculateRivalXpInput): Promise<Ca
   return calculateRivalXpFlow(input);
 }
 
+// The actual logic for calculating rival XP is done directly in the flow below
+// and does not currently use an LLM prompt.
 const calculateRivalXpFlow = ai.defineFlow(
   {
     name: 'calculateRivalXpFlow',
@@ -48,17 +51,19 @@ const calculateRivalXpFlow = ai.defineFlow(
 incompleteQuests
 } = input;
 
-    // Calculate the total potential XP gain from incomplete quests
-    const totalPotentialXp = incompleteQuests.reduce((sum, quest) => sum + quest.xpValue, 0);
-
     // Calculate the weighted XP gain based on the remaining time for each quest.
+    // For quests with less time remaining (closer to their "deadline"),
+    // the rival gains a larger proportion of that quest's XP value.
     const rivalXpGain = incompleteQuests.reduce((sum, quest) => {
-      const weight = 1 - (quest.timeRemainingMinutes / quest.durationMinutes);
-      return sum + quest.xpValue * weight;
+      // Weight is 0 if full time remains, 1 if no time remains.
+      // Ensure durationMinutes is not zero to avoid division by zero.
+      const weight = quest.durationMinutes > 0 ? 1 - (quest.timeRemainingMinutes / quest.durationMinutes) : 1;
+      return sum + quest.xpValue * Math.max(0, Math.min(1, weight)); // Ensure weight is between 0 and 1
     }, 0);
 
     return {
-      rivalXpGain: rivalXpGain,
+      rivalXpGain: Math.round(rivalXpGain), // Round to whole XP
     };
   }
 );
+
