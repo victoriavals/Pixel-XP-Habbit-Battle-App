@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Quest, IncompleteQuestForAI } from '@/types';
@@ -37,21 +38,32 @@ export function useBattleState() {
   };
 
   const toggleQuestComplete = (id: string) => {
-    setQuests(prevQuests =>
-      prevQuests.map(quest => {
-        if (quest.id === id) {
-          const updatedQuest = { ...quest, isComplete: !quest.isComplete };
-          if (updatedQuest.isComplete && !quest.isComplete) { // Was incomplete, now complete
-            setUserXp(prevXp => Math.min(prevXp + quest.xpValue, MAX_XP));
-            toast({ title: "Quest Complete!", description: `+${quest.xpValue} XP! Great job!` });
-          } else if (!updatedQuest.isComplete && quest.isComplete) { // Was complete, now incomplete
-            setUserXp(prevXp => Math.max(0, prevXp - quest.xpValue));
-          }
-          return updatedQuest;
-        }
-        return quest;
-      })
+    const questToToggle = quests.find(q => q.id === id);
+    if (!questToToggle) {
+      console.warn("Quest not found for toggling:", id);
+      return;
+    }
+
+    const isNowComplete = !questToToggle.isComplete;
+    const xpChange = questToToggle.xpValue;
+
+    // Update quests state by creating a new array
+    const newQuests = quests.map(q =>
+      q.id === id ? { ...q, isComplete: isNowComplete } : q
     );
+    setQuests(newQuests);
+
+    // Handle side effects (XP update and toast) after setting the quests state
+    if (isNowComplete) {
+      // Quest was incomplete, now complete
+      setUserXp(prevXp => Math.min(prevXp + xpChange, MAX_XP));
+      toast({ title: "Quest Complete!", description: `+${xpChange} XP! Great job!` });
+    } else {
+      // Quest was complete, now incomplete
+      setUserXp(prevXp => Math.max(0, prevXp - xpChange));
+      // Optionally, you could add a toast for reopening a quest
+      // toast({ title: "Quest Reopened", description: `"${questToToggle.title}" is now pending.` });
+    }
   };
 
   const updateRivalXp = useCallback(async () => {
@@ -70,7 +82,6 @@ export function useBattleState() {
 
     if (incompleteQuestsForAI.length === 0) {
       // No incomplete quests, Rival XP doesn't need to increase based on this logic for now.
-      // Or, it could slowly decay or stay put. For simplicity, no change if no incomplete quests.
       return;
     }
 
@@ -78,8 +89,6 @@ export function useBattleState() {
     try {
       const input: CalculateRivalXpInput = { incompleteQuests: incompleteQuestsForAI };
       const result = await calculateRivalXp(input);
-      // The AI result.rivalXpGain is the *total* XP the rival should have based on current state.
-      // So we set it directly, capped at MAX_XP.
       setRivalXp(Math.min(Math.round(result.rivalXpGain), MAX_XP));
     } catch (error) {
       console.error("Error calculating Rival XP:", error);
@@ -91,42 +100,48 @@ export function useBattleState() {
     } finally {
       setIsLoadingAi(false);
     }
-  }, [quests, toast]);
+  }, [quests, toast]); // `toast` is stable, so primarily `quests` drives recalculation
 
   useEffect(() => {
-    // Initial Rival XP calculation
     updateRivalXp();
-
-    const intervalId = setInterval(() => {
-      updateRivalXp();
-    }, RIVAL_XP_UPDATE_INTERVAL);
-
+    const intervalId = setInterval(updateRivalXp, RIVAL_XP_UPDATE_INTERVAL);
     return () => clearInterval(intervalId);
   }, [updateRivalXp]);
   
-  // Effect to load initial state from localStorage if desired (example)
   useEffect(() => {
-    const savedQuests = localStorage.getItem('pixelXpQuests');
-    const savedUserXp = localStorage.getItem('pixelXpUserXp');
-    const savedRivalXp = localStorage.getItem('pixelXpRivalXp');
+    try {
+      const savedQuests = localStorage.getItem('pixelXpQuests');
+      const savedUserXp = localStorage.getItem('pixelXpUserXp');
 
-    if (savedQuests) {
-      setQuests(JSON.parse(savedQuests));
+      if (savedQuests) {
+        setQuests(JSON.parse(savedQuests));
+      }
+      if (savedUserXp) {
+        setUserXp(JSON.parse(savedUserXp));
+      }
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+      toast({
+          title: "Load Error",
+          description: "Could not load saved progress.",
+          variant: "destructive",
+      });
     }
-    if (savedUserXp) {
-      setUserXp(JSON.parse(savedUserXp));
-    }
-    if (savedRivalXp) {
-      //setRivalXp(JSON.parse(savedRivalXp)); // Rival XP is calculated, so maybe don't load this
-    }
-  }, []);
+  }, [toast]); // Added toast to dependency array as it's used in catch
 
-  // Effect to save state to localStorage
   useEffect(() => {
-    localStorage.setItem('pixelXpQuests', JSON.stringify(quests));
-    localStorage.setItem('pixelXpUserXp', JSON.stringify(userXp));
-    // localStorage.setItem('pixelXpRivalXp', JSON.stringify(rivalXp)); // Rival XP is calculated
-  }, [quests, userXp]);
+    try {
+      localStorage.setItem('pixelXpQuests', JSON.stringify(quests));
+      localStorage.setItem('pixelXpUserXp', JSON.stringify(userXp));
+    } catch (error) {
+        console.error("Error saving to localStorage:", error);
+        toast({
+            title: "Save Error",
+            description: "Could not save progress.",
+            variant: "destructive",
+        });
+    }
+  }, [quests, userXp, toast]); // Added toast to dependency array
 
 
   return {
